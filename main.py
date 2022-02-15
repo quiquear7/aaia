@@ -5,14 +5,15 @@ import tensorflow as tf
 
 
 def read():
+    dataframes = {}
     users = os.listdir('data')
     for user in users:
         files = os.listdir('data/' + user)
         for file in files:
             file_name = "data/" + user + "/" + file  # File name
-            print(file_name)
-            df = pd.read_excel(file_name)
-            print(df)
+            if "u-turnings" in file.lower():
+                dataframes[user] = pd.read_excel(file_name)
+    print(dataframes)
 
 
 if __name__ == '__main__':
