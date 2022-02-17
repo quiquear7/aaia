@@ -32,7 +32,6 @@ def delete_columns(df):
                'Throttle input',
                'Brake pedal force',
                'Hand wheel torque',
-               'Maneuver marker flag'
                ]
     return df.drop(columns=columns)
 
@@ -41,13 +40,25 @@ def check_min_max(df, column: str):
     return df.drop(df[(df[column] < 0) | (df[column] > 65535)].index)
 
 
-def normalize_speed(x):
-    print(x)
-    if x > 1:
+def normalize(x, y):
+    # print(x, y)
+    if x - y > 0:
         return 1
-    if x == 0:
+    if x - y == 0:
         return 0
-    if x < 0:
+    if x - y < 0:
+        return -1
+
+
+def normalize_clutch(x):
+    return 1 if x > 0 else 0
+
+
+def normalize_gear(x, y):
+    # print(x, y)
+    if x - y > 0:
+        return 1
+    if x - y < 0:
         return -1
 
 
@@ -60,11 +71,28 @@ def read_tfds():
     df = check_min_max(df, 'Brake pedal')
     df = check_min_max(df, 'Clutch pedal')
 
-    #df['Gas pedal'] = df['speed'].apply(normalize_speed)
-    # df['Brake pedal'] = df['speed'].apply(normalize_speed)
-    # df['Clutch pedal'] = df['speed'].apply(normalize_speed)
-    # print(df['speed'])
-    # df.drop()
+    for i in df.index:
+        df['speed'][i] = normalize(df['speed'][i], df['speed'][i - 1]) if i != 0 \
+            else normalize(df['speed'][i], 0)
+
+        df['RPM'][i] = normalize(df['RPM'][i], df['RPM'][i - 1]) if i != 0 \
+            else normalize(df['RPM'][i], 0)
+
+        df['Steering wheel angle'][i] = normalize(df['Steering wheel angle'][i], df['Steering wheel angle'][i - 1]) \
+            if i != 0 else normalize(df['Steering wheel angle'][i], 0)
+
+        df['Gas pedal'][i] = normalize(df['Gas pedal'][i], df['Gas pedal'][i - 1]) if i != 0 \
+            else normalize(df['Gas pedal'][i], 0)
+
+        df['Brake pedal'][i] = normalize(df['Brake pedal'][i], df['Brake pedal'][i - 1]) if i != 0 \
+            else normalize(df['Brake pedal'][i], 0)
+
+        df['Clutch pedal'][i] = normalize_clutch(df['Clutch pedal'][i])
+
+        df['Gear'][i] = normalize(df['Gear'][i], df['Gear'][i - 1]) if i != 0 \
+            else normalize(df['Gear'][i], 0)
+
+    print(df)
 
 
 if __name__ == '__main__':
