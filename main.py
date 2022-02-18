@@ -41,7 +41,6 @@ def check_min_max(df, column: str):
 
 
 def normalize(x, y):
-    # print(x, y)
     if x - y > 0:
         return 1
     if x - y == 0:
@@ -55,18 +54,15 @@ def normalize_clutch(x):
 
 
 def normalize_gear(x, y):
-    # print(x, y)
     if x - y > 0:
         return 1
     if x - y < 0:
         return -1
 
 
-def read_tfds():
-    path = 'data/user-02-0/STISIMData_U-Turnings.xlsx'
-    df = pd.read_excel(path)
+def read_tfds(file: str):
+    df = pd.read_excel(file)
     df = delete_columns(df)
-    print(df.columns)
     df = check_min_max(df, 'Gas pedal')
     df = check_min_max(df, 'Brake pedal')
     df = check_min_max(df, 'Clutch pedal')
@@ -92,9 +88,16 @@ def read_tfds():
         df['Gear'][i] = normalize(df['Gear'][i], df['Gear'][i - 1]) if i != 0 \
             else normalize(df['Gear'][i], 0)
 
-    print(df)
+    x = df.drop('Maneuver marker flag', axis=1)
+    y = pd.get_dummies(df['Maneuver marker flag'])
+
+    return x, y
 
 
 if __name__ == '__main__':
     # read()
-    read_tfds()
+    file1 = 'data/user-02-0/STISIMData_U-Turnings.xlsx'
+    file2 = 'data/user-03-0/STISIMData_U-Turnings.xlsx'
+
+    xtrain, ytrain = read_tfds(file1)
+    xtest, ytest = read_tfds(file2)
