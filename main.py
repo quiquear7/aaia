@@ -1,8 +1,9 @@
 import pandas as pd
 import os
 import numpy as np
-import tensorflow as tf
-import tensorflow_datasets as tfds
+from matplotlib import pyplot as plt
+from mpl_toolkits.mplot3d import Axes3D
+from sklearn.cluster import KMeans
 
 
 def read():
@@ -29,16 +30,18 @@ def read():
     # print(dataframes)
     # tf.convert_to_tensor(dataframes['user-01-0'])
 
+
 def read_files():
     train = pd.read_excel('data/user-02-0/STISIMData_U-Turnings.xlsx')
     file2 = pd.read_excel('data/user-03-0/STISIMData_U-Turnings.xlsx')
-    #file3 = pd.read_excel('data/user-04-0/STISIMData_U-Turnings.xlsx')
+    # file3 = pd.read_excel('data/user-04-0/STISIMData_U-Turnings.xlsx')
     file4 = pd.read_excel('data/user-05-0/STISIMData_U-Turnings.xlsx')
     test = pd.read_excel('data/user-06-0/STISIMData_U-Turnings.xlsx')
-    #train = pd.concat([file1, file2], axis=0)
-    #train = pd.concat([train, file3], axis=0)
-    #train = pd.concat([train, file4], axis=0)
+    # train = pd.concat([file1, file2], axis=0)
+    # train = pd.concat([train, file3], axis=0)
+    # train = pd.concat([train, file4], axis=0)
     return train, test
+
 
 def delete_columns(df):
     columns = ['Accidents',
@@ -86,7 +89,7 @@ def normalize_maneuver_marker_flag(x):
     return 1 if x % 2 == 0 else 0
 
 
-def read_tfds(df):
+def read_tfds(df, t):
     # df = pd.read_excel(file)
     df = delete_columns(df)
     df = check_min_max(df, 'Gas pedal')
@@ -119,11 +122,28 @@ def read_tfds(df):
     x = df.drop('Maneuver marker flag', axis=1)
     y = pd.get_dummies(df['Maneuver marker flag'])
 
-    return x, y
+    return x, y if t == 1 else df
 
 
 if __name__ == '__main__':
     train, test = read_files()
 
-    xtrain, ytrain = read_tfds(train)
-    xtest, ytest = read_tfds(test)
+    xtrain, ytrain = read_tfds(train, 1)
+    xtest, ytest = read_tfds(test, 1)
+
+    #df = read_tfds(train, 0)
+
+    X = np.array(xtrain)
+    y = np.array(ytrain)
+    X2 = np.array(xtest)
+    y2 = np.array(ytest)
+
+    X.shape
+
+    kmeans = KMeans(n_clusters=2).fit(X)
+    centroids = kmeans.cluster_centers_
+    print(centroids)
+
+
+
+
