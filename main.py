@@ -7,28 +7,16 @@ from sklearn.cluster import KMeans
 
 
 def read():
-    # dataframes = {}
     users = os.listdir('data')
-    train = []
-    test = []
-    index = 0
+    dataframes = []
     for user in users:
         files = os.listdir('data/' + user)
         for file in files:
             file_name = "data/" + user + "/" + file  # File name
-            if "u-turnings" in file.lower() and index < 4:
-                if len(train) == 0:
-                    train.append(pd.read_excel(file_name))
-                else:
-                    train[0] = pd.concat([train[0], pd.read_excel(file_name)], axis=0)
-            else:
-                test.append(pd.read_excel(file_name))
-            index += 1
-    print(train)
-    print(test)
-    return train[0], test[0]
-    # print(dataframes)
-    # tf.convert_to_tensor(dataframes['user-01-0'])
+            if "u-turnings" in file.lower():
+                dataframes.append(pd.read_excel(file_name))
+
+    return pd.concat(dataframes)
 
 
 def read_files():
@@ -51,12 +39,10 @@ def delete_columns(df):
                'Red Lgt Tics',
                'Speed Exceed',
                'Stop Sign Ticks',
-               'Elapsed time',
-               'Long Dist',
-               'Lat Pos',
                'Throttle input',
                'Brake pedal force',
                'Hand wheel torque',
+               'Elapsed time'
                ]
     return df.drop(columns=columns)
 
@@ -66,6 +52,7 @@ def check_min_max(df, column: str):
 
 
 def normalize(x, y):
+    #print(x, y)
     if x - y > 0:
         return 1
     if x - y == 0:
@@ -86,54 +73,66 @@ def normalize_gear(x, y):
 
 
 def normalize_maneuver_marker_flag(x):
-    return 1 if x % 2 == 0 else 0
+    return "NO" if x % 2 == 0 else "YES"
 
 
 def read_tfds(df, t):
-    # df = pd.read_excel(file)
     df = delete_columns(df)
     df = check_min_max(df, 'Gas pedal')
     df = check_min_max(df, 'Brake pedal')
     df = check_min_max(df, 'Clutch pedal')
 
-    for i in df.index:
-        df['speed'][i] = normalize(df['speed'][i], df['speed'][i - 1]) if i != 0 \
-            else normalize(df['speed'][i], 0)
 
-        df['RPM'][i] = normalize(df['RPM'][i], df['RPM'][i - 1]) if i != 0 \
-            else normalize(df['RPM'][i], 0)
+    for index, rows in df.iterrows():
+        # for i in df.index:
+        df.loc[index, 'speed'] = normalize(rows['speed'], df.iloc[index - 1]['speed']) if index != 0 \
+            else normalize(rows['speed'], 0)
 
-        df['Steering wheel angle'][i] = normalize(df['Steering wheel angle'][i], df['Steering wheel angle'][i - 1]) \
-            if i != 0 else normalize(df['Steering wheel angle'][i], 0)
+        df.loc[index, 'RPM'] = normalize(rows['RPM'], df.iloc[index - 1]['RPM']) if index != 0 \
+            else normalize(rows['RPM'], 0)
 
-        df['Gas pedal'][i] = normalize(df['Gas pedal'][i], df['Gas pedal'][i - 1]) if i != 0 \
-            else normalize(df['Gas pedal'][i], 0)
+        df.loc[index, 'Steering wheel angle'] = normalize(rows['Steering wheel angle'], df.iloc[index - 1]['Steering wheel angle']) \
+            if index != 0 else normalize(rows['Steering wheel angle'], 0)
 
-        df['Brake pedal'][i] = normalize(df['Brake pedal'][i], df['Brake pedal'][i - 1]) if i != 0 \
-            else normalize(df['Brake pedal'][i], 0)
+        df.loc[index, 'Gas pedal'] = normalize(rows['Gas pedal'], df.iloc[index - 1]['Gas pedal']) if index != 0 \
+            else normalize(rows['Gas pedal'], 0)
 
-        df['Clutch pedal'][i] = normalize_clutch(df['Clutch pedal'][i])
+        df.loc[index, 'Brake pedal'] = normalize(rows['Brake pedal'], df.iloc[index - 1]['Brake pedal']) if index != 0 \
+            else normalize(rows['Brake pedal'], 0)
 
-        df['Gear'][i] = normalize(df['Gear'][i], df['Gear'][i - 1]) if i != 0 \
-            else normalize(df['Gear'][i], 0)
+        df.loc[index, 'Clutch pedal'] = normalize_clutch(rows['Clutch pedal'])
 
-        df['Maneuver marker flag'][i] = normalize_maneuver_marker_flag(df['Maneuver marker flag'][i])
+        df.loc[index, 'Gear'] = normalize(rows['Gear'], df.iloc[index - 1]['Gear']) if index != 0 \
+            else normalize(rows['Gear'], 0)
+
+        df.loc[index, 'Long Dist'] = normalize(rows['Long Dist'], df.iloc[index - 1]['Long Dist']) if index != 0 \
+            else normalize(rows['Long Dist'], 0)
+
+        df.loc[index, 'Lat Pos'] = normalize(rows['Lat Pos'], df.iloc[index - 1]['Lat Pos']) if index != 0 \
+            else normalize(rows['Lat Pos'], 0)
+
+        df.loc[index, "Maneuver marker flag"] = normalize_maneuver_marker_flag(rows['Maneuver marker flag'])
 
     x = df.drop('Maneuver marker flag', axis=1)
     y = pd.get_dummies(df['Maneuver marker flag'])
 
-    return x, y if t == 1 else df
+    return df
 
 
 if __name__ == '__main__':
-    train, test = read_files()
+    data = read()
+    data1 = data.dropna(subset=['speed', 'RPM', 'Steering wheel angle', 'Gas pedal', 'Brake pedal', 'Clutch pedal',
+                                'Gear', 'Maneuver marker flag', 'Long Dist', 'Lat Pos'])
+    #dfr = data1.rolling(window=5).mean()
+    df = read_tfds(data1, 0)
+    df.to_csv("result.csv", index=False)
+
+    """train, test = read_files()
 
     xtrain, ytrain = read_tfds(train, 1)
-    xtest, ytest = read_tfds(test, 1)
+    xtest, ytest = read_tfds(test, 1)"""
 
-    #df = read_tfds(train, 0)
-
-    X = np.array(xtrain)
+    """X = np.array(xtrain)
     y = np.array(ytrain)
     X2 = np.array(xtest)
     y2 = np.array(ytest)
@@ -142,8 +141,4 @@ if __name__ == '__main__':
 
     kmeans = KMeans(n_clusters=2).fit(X)
     centroids = kmeans.cluster_centers_
-    print(centroids)
-
-
-
-
+    print(centroids)"""
