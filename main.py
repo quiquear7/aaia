@@ -1,9 +1,5 @@
 import pandas as pd
 import os
-import numpy as np
-from matplotlib import pyplot as plt
-from mpl_toolkits.mplot3d import Axes3D
-from sklearn.cluster import KMeans
 
 
 def read():
@@ -15,7 +11,6 @@ def read():
             file_name = "data/" + user + "/" + file  # File name
             if "overtaking" in file.lower():
                 dataframes.append(pd.read_excel(file_name))
-
     return pd.concat(dataframes)
 
 
@@ -72,7 +67,6 @@ def read_tfds(df, t):
     df = check_min_max(df, 'Clutch pedal')
 
     for index, rows in df.iterrows():
-        # for i in df.index:
         df.loc[index, 'speed'] = normalize(rows['speed'], df.iloc[index - 1]['speed']) if index != 0 \
             else normalize(rows['speed'], 0)
 
